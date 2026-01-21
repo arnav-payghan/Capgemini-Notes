@@ -1,8 +1,7 @@
-```
 *&---------------------------------------------------------------------*
 *& Report ZRP_CALC_CHECK_34
 *&---------------------------------------------------------------------*
-*&
+*& REPORT BY ~ ARNAV PAYGHAN
 *&---------------------------------------------------------------------*
 REPORT ZRP_CALC_CHECK_34.
 
@@ -45,43 +44,48 @@ SELECTION-SCREEN: END OF BLOCK b0.
 INITIALIZATION.
   p_date = sy-datum.
 
+* VALIDATION *
 AT SELECTION-SCREEN.
-  IF p_num1 NA '0123456789' AND p_num2 NA '0123456789'.
-    MESSAGE 'Input should be of type numeric only.' TYPE 'E'.
-  ENDIF.
+
+IF p_num1 NA '0123456789' OR p_num2 NA '0123456789'.
+  MESSAGE 'Input should be of type numeric only.' TYPE 'E'.
+ENDIF.
 
 START-OF-SELECTION.
 
-  IF p_check1 = 'X'.
-    p_result = p_num1 + p_num2.
-    WRITE: / 'Addition of them is : ', p_result.
-  ENDIF.
+* ADDITION *
+IF p_check1 = 'X'.
+  p_result = p_num1 + p_num2.
+  WRITE: / 'Addition of them is : ', p_result.
+ENDIF.
 
-  IF p_check2 = 'X'.
-    IF p_num1 > p_num2.
-      p_result = p_num1 - p_num2.
-      WRITE: / 'Subtraction num1-num2 them is : ', p_result.
-    ELSE.
-      p_result = p_num2 - p_num1.
-      WRITE: / 'Subtraction of num2-num1 is : ', p_result.
-    ENDIF.
+* SUBTRACTION *
+IF p_check2 = 'X'.
+  IF p_num1 > p_num2.
+    p_result = p_num1 - p_num2.
+    WRITE: / 'Subtraction num1-num2 them is : ', p_result.
+  ELSE.
+    p_result = p_num2 - p_num1.
+    WRITE: / 'Subtraction of num2-num1 is : ', p_result.
   ENDIF.
+ENDIF.
 
-  IF p_check3 = 'X'.
-    IF p_num1 = 0 OR p_num2 = 0.
-      MESSAGE 'Exception0: Multiplication by 0 is Not Allowed.' TYPE 'E'.
-    ELSE.
-      p_result = p_num1 * p_num2.
-      WRITE: / 'Multiplication of them is : ', p_result.
-    ENDIF.
+* MULTIPLICATION *
+IF p_check3 = 'X'.
+  IF p_num1 = 0 OR p_num2 = 0.
+    MESSAGE 'Exception0: Multiplication by 0 is Not Allowed.' TYPE 'E'.
+  ELSE.
+    p_result = p_num1 * p_num2.
+    WRITE: / 'Multiplication of them is : ', p_result.
   ENDIF.
+ENDIF.
 
-  IF p_check4 = 'X'.
-    IF p_num1 = 0 OR p_num2 = 0.
-      MESSAGE 'Exception0: Division by 0 is Not Allowed.' TYPE 'E'.
-    ELSE.
-      p_result = p_num1 / p_num2.
-      WRITE: / 'Division of them is : ', p_result.
-    ENDIF.
+* DIVISION *
+IF p_check4 = 'X'.
+  IF p_num1 = 0 OR p_num2 = 0.
+    MESSAGE 'Exception0: Division by 0 is Not Allowed.' TYPE 'E'.
+  ELSE.
+    p_result = p_num1 / p_num2.
+    WRITE: / 'Division of them is : ', p_result.
   ENDIF.
-```
+ENDIF.
