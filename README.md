@@ -6,6 +6,4 @@
 
 > Date: January 19th, 2026.
 
-- [ ] Task Item 1
-- [ ] Task Item 2
-- [ ] Task Item 3
+- [ ] Study for Test on Friday [23-01-2026].
