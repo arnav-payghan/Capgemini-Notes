@@ -6,5 +6,5 @@
 
 > Date: January 19th, 2026.
 
-- [ ] Finish Assignment : 21-01-2026 (Assignment 2). [TBS: 22-01-2026].
+- [X] Finish Assignment : 21-01-2026 (Assignment 2). [TBS: 22-01-2026].
 - [ ] Study for Fridays Test [23-01-2026].
