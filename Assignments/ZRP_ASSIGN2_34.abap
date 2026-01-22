@@ -92,6 +92,15 @@ START-OF-SELECTION.
 
 * SELECT-OPTION KAISE KARU CALCULATE??? *
 
+*MY LOGIC:
+*IF p_rows IS NOT INITIAL AND RANGE OF MATNR IS NOT INITIAL.
+*  p_rows WILL BE OF PARAMETERS. (p_rows = p_rows) .
+*ELSEIF p_rows IS INITIAL AND RANGE OF MATNR IS NOT INITIAL.
+*  UPPER - LOWER. --------- BUT HOWWWW??
+*ELSE.
+*  p_rows = 10.
+
+
   IF p_rb1 = 'X'.
     SELECT matnr
            ersda
