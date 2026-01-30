@@ -6,5 +6,9 @@
 
 > Date: January 19th, 2026.
 
-- [X] Finish Assignment : 21-01-2026 (Assignment 2). [TBS: 22-01-2026].
-- [ ] Study for Fridays Test [23-01-2026].
+- [ ] Study for MCQ Assessment (30-01-2026).
+  - [ ] DDIC
+  - [ ] Classical Report
+  - [ ] Classical Interactive
+
+- [ ] Make a Back-Up of all the files and screenshots into a word file.
