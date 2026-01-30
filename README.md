@@ -4,7 +4,7 @@
 
 ### Task List:
 
-> Date: January 19th, 2026.
+> Date: January 30th, 2026.
 
 - [ ] Study for MCQ Assessment (30-01-2026).
   - [ ] DDIC
