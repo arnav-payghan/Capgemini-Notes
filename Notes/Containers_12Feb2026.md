@@ -6,6 +6,13 @@ Dialog Programming has 4 events:
 >  
 >  
 
+### ASSIGNMENT 1:
+LIST HEADER.
+- program name
+- username
+- current date
+- current time
+
 ### ASSIGNMENT 2:
 
 Table
@@ -28,3 +35,5 @@ exit button -> initial screen
 - Algorithms.
 
 To be submitted on Monday.
+
+
