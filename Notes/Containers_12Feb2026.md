@@ -6,7 +6,7 @@ Dialog Programming has 4 events:
 >  
 >  
 
-ASSIGNMENT2:
+### ASSIGNMENT 2:
 
 Table
 Username
@@ -21,3 +21,10 @@ button [ok] [cancel] -> data gets cleared from screen100.
 if correct input -> screen 200 : [emp table 50:50 dept table] 
 needs back option on screen 200 -> 100.
 exit button -> initial screen
+
+### Create TDD.  
+- Need a flowchart.
+- What exactly is happening, flow-wise.
+- Algorithms.
+
+To be submitted on Monday.
