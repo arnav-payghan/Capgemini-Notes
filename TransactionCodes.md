@@ -7,3 +7,5 @@
 - **SM30**: Table Maintenance.
 - **SE37**: Function Modules.
 - **SE80**: Object Navigator.
+- **SE91**: Message Class Creation.
+- **SE93**: Creation of Transaction Code.
