@@ -9,3 +9,9 @@
 - **SE80**: Object Navigator.
 - **SE91**: Message Class Creation.
 - **SE93**: Creation of Transaction Code.
+- **WE02**: Monitoring IDoC.
+- **WE19**: Testing Tool for IDoc.
+- **WE30**: IDoC Types.
+- **WE31**: IDoC Creation.
+- **SM59**: To view RFC.
+- **BD64**: Distribution Model
