@@ -1,0 +1,624 @@
+" The following document contains notes for the following topics:
+" Classical Interactive, Interactive ALV, Blocked ALV, Containers and Grids.
+" Along with Header Display.
+
+" --------------------------------------------------------------------------- "
+
+" <<< Header Display >>>
+
+" --------------------------------------------------------------------------- "
+
+" Inside a perform that can be used inside an git_event.
+FORM display_header .
+
+  WRITE: / sy-uline(52).
+  WRITE: /1 '|Client|', 9 sy-mandt,
+          21'|        ',
+          32 '|Date |', 39 sy-datum, 52'|'.
+  WRITE: / sy-uline(52).
+  WRITE: /1 '|User  |', 9 sy-uname,
+          21'|          ',
+           32'|Time |',39 sy-uzeit, 52'|'.
+  WRITE: / sy-uline(52).
+
+ENDFORM.
+
+" top-of-page perform which calls the above display header
+FORM top_of_page .
+  CLEAR gwa_event.
+  gwa_event-name = slis_ev_top_of_page.
+  gwa_event-form = 'DISPLAY_HEADER'.
+  APPEND gwa_event TO git_event1.
+ENDFORM.
+
+" Usage: just call in append or display where needed
+CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_APPEND'
+    EXPORTING
+      is_layout                  = gwa_layout1
+      it_fieldcat                = git_fcat1[]
+      i_tabname                  = 'GIT_MTDC'
+      it_events                  = git_event1[] " HERE
+    TABLES
+      t_outtab                   = git_mtdc[]
+    EXCEPTIONS
+      program_error              = 1
+      maximum_of_appends_reached = 2
+      OTHERS                     = 3.
+
+" --------------------------------------------------------------------------- "
+
+" <<< CLASSICAL INTERACTIVE >>>
+
+" --------------------------------------------------------------------------- "
+
+" You need to fetch data - assume function module for the following test case.
+
+" Then Main Program needs include programs and the following code:
+AT SELECTION-SCREEN.
+  PERFORM validation.
+
+START-OF-SELECTION.
+  PERFORM fetch_data.
+  PERFORM display_data.
+
+AT LINE-SELECTION.
+  PERFORM handle_line_selection.
+
+TOP-OF-PAGE.
+"<based upon requirement>
+TOP-OF-PAGE DURING LINE-SELECTION.
+"<for line selection and secondary lists headers>
+
+" Subroutines used for FORMS:
+
+" <FETCH DATA USING FM BY PATTERN>
+FORM fetch_data .
+  CALL FUNCTION 'Z_34HP_CI_FM'
+    TABLES
+      final_table = git_final
+      so_matnr    = so_matnr[].
+ENDFORM.
+
+" <DISPLAY DATA>
+FORM display_data .
+  LOOP AT git_final INTO gwa_final.
+    WRITE: / gwa_final-matnr UNDER 'MATNR',
+             " and other fields but need the below HOTSPOT on one.
+             gwa_final-werks UNDER 'WEKRS' HOTSPOT,
+    CLEAR gwa_final.
+  ENDLOOP.
+  ULINE.
+ENDFORM.
+
+" <MOST IMPORTANT FOR HANDLING_LINE_SELECTION>
+FORM handle_line_selection.
+
+" Define the data required in data include program like structs, internal
+" tables, work area and GET CURSORS as well, still added get cursor.
+  
+" <add in data declarations include program>
+  DATA: fname TYPE char30,
+        fval  TYPE char30.
+
+  GET CURSOR FIELD fname VALUE fval.
+
+  IF fname = 'GWA_FINAL-WERKS'.
+    SELECT matnr
+           " and other fields
+      INTO TABLE it_plant
+      FROM mard
+      WHERE werks = fval.
+
+    IF sy-subrc IS INITIAL.
+      WRITE: / 'MATNR' COLOR 1,
+            " and others.
+      ULINE.
+
+      LOOP AT it_plant INTO wa_plant.
+        WRITE: / wa_plant-matnr UNDER 'MATNR',
+                " and others.
+        CLEAR wa_plant.
+      ENDLOOP.
+      ULINE.
+    ENDIF.
+  ELSE.
+    MESSAGE: 'PLEASE CLICK ON A VALUE IN THE "WERKS" FIELD.' TYPE 'I'.
+  ENDIF.
+
+ENDFORM.
+
+" --------------------------------------------------------------------------- "
+
+" <<< ALV INTERACTIVE >>>
+
+" --------------------------------------------------------------------------- "
+
+" Data Decaration of Fieldcats and  with TYPE POOLS: slis
+
+DATA: git_fcat  TYPE slis_t_fieldcat_alv,
+      git_fcat2 TYPE slis_t_fieldcat_alv,
+      gwa_fcat  TYPE slis_fieldcat_alv,
+      git_event TYPE slis_t_event.
+
+" Other than that, structs of necessary tables and their GIT and GWA.
+
+START-OF-SELECTION.
+  PERFORM fetch_mtdc.
+  PERFORM display_data.
+
+" Internal Subroutines
+
+" Fetching Data manually (Not FM)
+FORM fetch_mtdc .
+  SELECT MBLNR 
+         " and other fields
+    FROM ZM234_MTDC
+    INTO TABLE GIT_MTDC
+    WHERE MBLNR IN SO_MBLNR.
+  IF SY-SUBRC IS NOT INITIAL.
+    MESSAGE: 'Fetching or Range Issue in MTDC.' TYPE 'E'.
+  ENDIF.
+ENDFORM.
+
+" Display Data with ALV LIST DISPLAY
+FORM display_data .
+  PERFORM populate_first_list_fcat.
+
+  CALL FUNCTION 'REUSE_ALV_LIST_DISPLAY'
+   EXPORTING
+     I_CALLBACK_PROGRAM             = sy-repid
+     I_CALLBACK_USER_COMMAND        = 'AT_LINE_SELECTION'
+     IT_EVENTS                      = git_event[]
+     IT_FIELDCAT                    = git_fcat[]
+    TABLES
+      t_outtab                       = git_mtdc[]
+   EXCEPTIONS
+     PROGRAM_ERROR                  = 1
+     OTHERS                         = 2.
+  IF sy-subrc <> 0.
+    MESSAGE: 'Issue in Function Module for Displaying ALV LISTT.' TYPE 'E'.
+  ENDIF.
+
+ENDFORM.
+
+" FieldCat Merge to Populate the first list
+FORM populate_first_list_fcat .
+  CALL FUNCTION 'REUSE_ALV_FIELDCATALOG_MERGE'
+   EXPORTING
+     I_PROGRAM_NAME               = sy-repid
+     I_INTERNAL_TABNAME           = 'GIT_MTDC'
+     I_STRUCTURE_NAME             = 'ZM234_MTDC'
+    CHANGING
+      ct_fieldcat                 = git_fcat[]
+   EXCEPTIONS
+     INCONSISTENT_INTERFACE       = 1
+     PROGRAM_ERROR                = 2
+     OTHERS                       = 3.
+  IF sy-subrc IS INITIAL. " THIS IS THE IMPORTANT PART
+    CLEAR gwa_fcat.
+    LOOP AT git_fcat INTO gwa_fcat.
+      IF gwa_fcat-fieldname = 'MATNR'. " Field Name to be changed as needed
+        gwa_fcat-hotspot = 'X'.
+        MODIFY git_fcat FROM gwa_fcat.
+      ENDIF.
+    ENDLOOP.
+  ENDIF.
+ENDFORM.
+
+" Upon LINE SELECTION (Basically GET CURSOR Method for ALVI)
+FORM at_line_selection USING r_ucomm LIKE sy-ucomm
+                             rs_selfield TYPE slis_selfield.
+
+  CASE r_ucomm.
+    WHEN '&IC1'.
+      READ TABLE git_mtdc INDEX rs_selfield-tabindex INTO gwa_mtdc. " Get Cursor for ALV
+      CHECK sy-subrc IS INITIAL.
+      IF rs_selfield-sel_tab_field = 'GIT_MTDC-MBLNR'.
+        SELECT  MBLNR
+                " and other fields
+           FROM ZM234_MTDS INTO TABLE git_mtds WHERE mblnr = rs_selfield-value.
+        IF sy-subrc IS INITIAL.
+          PERFORM display_mtds.
+        ENDIF.
+      ENDIF.
+  ENDCASE.
+ENDFORM.
+
+" Displaying the secondary list
+FORM display_mtds .
+  CALL FUNCTION 'REUSE_ALV_LIST_DISPLAY'
+   EXPORTING
+     I_CALLBACK_PROGRAM             = sy-repid
+     I_STRUCTURE_NAME               = 'ZM234_MTDS'
+     IT_FIELDCAT                    = git_fcat2[]
+    TABLES
+      t_outtab                       = git_mtds[]
+   EXCEPTIONS
+     PROGRAM_ERROR                  = 1
+     OTHERS                         = 2.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+ENDFORM.
+
+" --------------------------------------------------------------------------- "
+
+" <<< ALV BLOCKED >>>
+
+" --------------------------------------------------------------------------- "
+
+" Data Declarations
+DATA: gs_layout   TYPE slis_layout_alv,
+      gt_fieldcat TYPE slis_t_fieldcat_alv,
+      gs_fieldcat TYPE slis_fieldcat_alv,
+      IT_EVENT1 TYPE SLIS_T_EVENT.
+
+" Subroutine for displaying ALV in BLOCKED
+    CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_INIT' " Initialize BLOCK ALV - LIST
+      EXPORTING
+        i_callback_program = sy-repid.
+   " MERGE.
+    CALL FUNCTION 'REUSE_ALV_FIELDCATALOG_MERGE'
+       EXPORTING
+         I_PROGRAM_NAME               = sy-repid
+         I_INTERNAL_TABNAME           = 'GIT_ORG'
+         I_STRUCTURE_NAME             = 'ZSC34_ORG'
+        CHANGING
+          ct_fieldcat                 = gt_fieldcat[]
+       EXCEPTIONS
+         INCONSISTENT_INTERFACE       = 1
+         PROGRAM_ERROR                = 2
+         OTHERS                       = 3.
+      IF sy-subrc <> 0.
+*       Implement suitable error handling here
+      ENDIF.
+
+    CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_APPEND' " APPEND ORG
+      EXPORTING
+        is_layout          = gs_layout
+        it_fieldcat        = gt_fieldcat
+        it_events          = it_event1
+        i_tabname          = 'GIT_ORG'
+      TABLES
+        t_outtab           = git_org
+      EXCEPTIONS
+        program_error      = 1
+        OTHERS             = 2.
+
+    CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_APPEND' " APPEND PRD
+      EXPORTING
+        is_layout          = gs_layout
+        it_fieldcat        = gt_fieldcat
+        it_events          = it_event1
+        i_tabname          = 'GIT_ORG'
+      TABLES
+        t_outtab           = git_org
+      EXCEPTIONS
+        program_error      = 1
+        OTHERS             = 2.
+
+    CALL FUNCTION 'REUSE_ALV_BLOCK_LIST_DISPLAY'.
+
+" --------------------------------------------------------------------------- "
+
+" <<< GRIDS and CONTAINERS >>>
+
+" --------------------------------------------------------------------------- "
+
+" Main Report
+INCLUDE: Z34_HP_GNC_DATA,   " Data Declarations
+         Z34_HP_GNC_CLASS.  " Classes and Methods
+INCLUDE z34_hp_gnc_status_0100o01.
+INCLUDE z34_hp_gnc_user_command_010i01.
+
+START-OF-SELECTION.
+  CREATE OBJECT fetch.
+  CREATE OBJECT display.
+
+  CALL SCREEN 0100.
+
+" Data Declarations is minimal but you need a layout of 2 custom containers
+DATA: go_container1 TYPE REF TO cl_gui_custom_container,
+      go_container2 TYPE REF TO cl_gui_custom_container,
+      go_grid1  TYPE REF TO cl_gui_alv_grid,
+      go_grid2  TYPE REF TO cl_gui_alv_grid.
+
+DATA: git_mtdc TYPE TABLE OF ZM234_MTDC,
+      git_mtds TYPE TABLE OF ZM234_MTDS.
+
+" Classes and Methods Include Program
+
+" Class Definition for fetching data
+CLASS fetch_data DEFINITION.
+  PUBLIC SECTION.
+    METHODS: fetch_mtdc,
+      fetch_mtds.
+ENDCLASS.
+
+" Class Definition for displaying data
+CLASS display_data DEFINITION.
+  PUBLIC SECTION.
+    METHODS: display.
+ENDCLASS.
+
+" Class Implementation for fetching data
+CLASS fetch_data IMPLEMENTATION.
+  METHOD fetch_mtdc.
+    SELECT * FROM zm234_mtdc INTO TABLE git_mtdc.
+    IF sy-subrc IS NOT INITIAL.
+      MESSAGE: 'query issue in mtdc fetching' TYPE 'E'.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD fetch_mtds.
+    SELECT * FROM zm234_mtds INTO TABLE git_mtds.
+    IF sy-subrc IS NOT INITIAL.
+      MESSAGE: 'query issue in mtds fetching' TYPE 'E'.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+" Class Implementation for displaying data
+CLASS display_data IMPLEMENTATION.
+  METHOD display.
+    IF go_container1 IS NOT BOUND AND go_container2 IS NOT BOUND.
+      " use  CREATE OBJECT go_container<num> (ctrl+space)  
+      CREATE OBJECT go_container1 
+        EXPORTING
+          container_name              = 'CC_MTDC'                 " Name of the Screen CustCtrl Name to Link Container To
+        EXCEPTIONS
+          cntl_error                  = 1                " CNTL_ERROR
+          cntl_system_error           = 2                " CNTL_SYSTEM_ERROR
+          create_error                = 3                " CREATE_ERROR
+          lifetime_error              = 4                " LIFETIME_ERROR
+          lifetime_dynpro_dynpro_link = 5                " LIFETIME_DYNPRO_DYNPRO_LINK
+          OTHERS                      = 6.
+      IF sy-subrc <> 0.
+      ENDIF.
+      CREATE OBJECT go_container2
+        EXPORTING
+          container_name              = 'CC_MTDS'                 " Name of the Screen CustCtrl Name to Link Container To
+        EXCEPTIONS
+          cntl_error                  = 1                " CNTL_ERROR
+          cntl_system_error           = 2                " CNTL_SYSTEM_ERROR
+          create_error                = 3                " CREATE_ERROR
+          lifetime_error              = 4                " LIFETIME_ERROR
+          lifetime_dynpro_dynpro_link = 5                " LIFETIME_DYNPRO_DYNPRO_LINK
+          OTHERS                      = 6.
+      IF sy-subrc <> 0.
+      ENDIF.
+    ENDIF.
+    CHECK go_container1 IS BOUND AND go_container2 IS BOUND.
+
+    IF go_grid1 IS NOT BOUND AND go_grid2 IS NOT BOUND.
+      CREATE OBJECT go_grid1
+        EXPORTING
+          i_parent          = go_container1                 " Parent Container
+        EXCEPTIONS
+          error_cntl_create = 1                " Error when creating the control
+          error_cntl_init   = 2                " Error While Initializing Control
+          error_cntl_link   = 3                " Error While Linking Control
+          error_dp_create   = 4                " Error While Creating DataProvider Control
+          OTHERS            = 5.
+      IF sy-subrc <> 0.
+      ENDIF.
+      CREATE OBJECT go_grid2
+        EXPORTING
+          i_parent          = go_container2                 " Parent Container
+        EXCEPTIONS
+          error_cntl_create = 1                " Error when creating the control
+          error_cntl_init   = 2                " Error While Initializing Control
+          error_cntl_link   = 3                " Error While Linking Control
+          error_dp_create   = 4                " Error While Creating DataProvider Control
+          OTHERS            = 5.
+      IF sy-subrc <> 0.
+      ENDIF.
+    ENDIF.
+    CHECK go_grid1 IS BOUND AND go_grid2 IS BOUND.
+
+    CALL METHOD go_grid1->set_table_for_first_display
+      EXPORTING
+        i_structure_name              = 'ZM234_MTDC'                 " Internal Output Table Structure Name
+      CHANGING
+        it_outtab                     = git_mtdc[]                 " Output Table
+      EXCEPTIONS
+        invalid_parameter_combination = 1                " Wrong Parameter
+        program_error                 = 2                " Program Errors
+        too_many_lines                = 3                " Too many Rows in Ready for Input Grid
+        OTHERS                        = 4.
+    IF sy-subrc <> 0.
+    ENDIF.
+
+    CALL METHOD go_grid2->set_table_for_first_display
+      EXPORTING
+        i_structure_name              = 'ZM234_MTDS'                 " Internal Output Table Structure Name
+      CHANGING
+        it_outtab                     = git_mtds[]                 " Output Table
+      EXCEPTIONS
+        invalid_parameter_combination = 1                " Wrong Parameter
+        program_error                 = 2                " Program Errors
+        too_many_lines                = 3                " Too many Rows in Ready for Input Grid
+        OTHERS                        = 4.
+    IF sy-subrc <> 0.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
+
+" Needed in CLASSES INCLUDE PROGRAM FOR DECLARATION.
+DATA: fetch TYPE REF TO fetch_data.
+DATA: display TYPE REF TO display_data.
+
+" In CALL SCREEN 0100.
+PROCESS BEFORE OUTPUT.
+ MODULE STATUS_0100.
+*
+PROCESS AFTER INPUT.
+ MODULE USER_COMMAND_0100.
+
+" For PBO: Make the status bar from XXXXXX -> STATUS_0100
+MODULE status_0100 OUTPUT.
+ SET PF-STATUS 'STATUS0100'.
+* SET TITLEBAR 'xxx'.
+ 
+ " Call only when made in include program
+ call method fetch->fetch_mtdc( ).
+ call method fetch->fetch_mtds( ).
+
+ call method display->display( ).
+
+ENDMODULE.
+
+" FOR PAI
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR 'EXIT' OR 'CANC'.
+      LEAVE PROGRAM.
+  ENDCASE.
+ENDMODULE.
+
+" --------------------------------------------------------------------------- "
+
+" <<< OOABAP ALV Interactive - GNC Method >>>
+
+" --------------------------------------------------------------------------- "
+
+" Global Class Creation Required First.
+" Attributes: GO_CONTAINER1 and 2 - CL_GUI_CUSTOM_CONTAINER
+	      GO_GRID1 and 2      - CL_GUI_ALV_GRID
+" Methods:    Fetch_S1   [ LV_S_BELNR - Associated SO TT (Importing), ET_ACC - Z34_ACC_TT (Changing) ]
+	      Fetch_S2   [ IV_BELNR - Z34_BELNR (Importing), ET_ACC1 - Z34_ACC1_TT (Changing) ]
+	      Display_S1 [ GO_GRID TYPE REF TO CL_GUI_ALV_GRID (Returning) ]
+	      Display_S2 [ GO_GRID TYPE REF TO CL_GUI_ALV_GRID (Returning) ]
+
+" Method for Fetching Screen1.
+  method FETCH_S1.
+    SELECT * FROM Z34_ACC INTO CORRESPONDING FIELDS OF TABLE ET_ACC WHERE BELNR IN LV_S_BELNR.
+    IF sy-subrc IS INITIAL.
+      SORT ET_ACC BY BELNR.
+    ELSE.
+      MESSAGE: 'ACC Query Issue.' TYPE 'E'.
+    ENDIF.
+  endmethod.
+
+" Method for Displaying (normal GNC)
+  method DISPLAY_S1.
+    IF go_container1 is not bound.
+      create OBJECT go_container1
+        EXPORTING
+          container_name              = 'CC_ACC_34'                 " Name of the Screen CustCtrl Name to Link Container To
+        EXCEPTIONS
+          cntl_error                  = 1                " CNTL_ERROR
+          cntl_system_error           = 2                " CNTL_SYSTEM_ERROR
+          create_error                = 3                " CREATE_ERROR
+          lifetime_error              = 4                " LIFETIME_ERROR
+          lifetime_dynpro_dynpro_link = 5                " LIFETIME_DYNPRO_DYNPRO_LINK
+          others                      = 6
+        .
+      IF SY-SUBRC <> 0.
+*       MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+      ENDIF.
+    endif.
+    CHECK go_container1 is bound.
+
+    if go_grid1 is not bound.
+      CREATE OBJECT go_grid1
+        EXPORTING
+          i_parent                = go_container1                 " Parent Container
+        EXCEPTIONS
+          error_cntl_create       = 1                " Error when creating the control
+          error_cntl_init         = 2                " Error While Initializing Control
+          error_cntl_link         = 3                " Error While Linking Control
+          error_dp_create         = 4                " Error While Creating DataProvider Control
+          others                  = 5
+        .
+      IF SY-SUBRC <> 0.
+*       MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*         WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+      ENDIF.
+    endif.
+    CHECK go_grid1 is bound.
+
+    go_grid = go_grid1.
+
+  endmethod.
+
+" Now to make REPORT
+
+" Data Declarations
+
+TABLES: Z34_ACC, Z34_ACC1.
+
+DATA: lv_belnr TYPE Z34_BELNR .
+
+DATA: git_acc TYPE TABLE OF Z34_ACC,
+      git_acc1 TYPE TABLE OF Z34_ACC1.
+
+DATA: go_grid1 TYPE REF TO cl_gui_alv_grid,
+      go_grid2 TYPE REF TO cl_gui_alv_grid.
+
+" Showing right now for only screen 1.
+
+CLASS screen1 DEFINITION.
+  PUBLIC SECTION.
+  METHODS: constructor,
+           display_data,
+           handle_double_click 
+		FOR EVENT double_click OF cl_gui_alv_grid 
+		IMPORTING e_row e_column. " Not Required for screen2
+
+  PRIVATE SECTION.
+  DATA: go_main TYPE REF TO Z34_ALVI_OO.
+ENDCLASS.
+
+CLASS screen1 IMPLEMENTATION.
+  METHOD constructor.
+    CREATE OBJECT go_main.
+
+     go_main->fetch_s1(
+       EXPORTING
+         lv_s_belnr = s_belnr[]                 " Table type of belnr acc
+       CHANGING
+         et_acc     = git_acc[]                 " Accounting Document Header
+     ).
+  ENDMETHOD.
+
+  METHOD display_data.
+    go_main->display_s1(
+      RECEIVING
+        go_grid = go_grid1                 " ALV List Viewer
+    ).
+
+    go_grid1->set_table_for_first_display(
+      EXPORTING
+        i_structure_name              = 'Z34_ACC'                 " Internal Output Table Structure Name
+      CHANGING
+        it_outtab                     = git_acc[]                 " Output Table
+      EXCEPTIONS
+        invalid_parameter_combination = 1                " Wrong Parameter
+        program_error                 = 2                " Program Errors
+        too_many_lines                = 3                " Too many Rows in Ready for Input Grid
+        others                        = 4
+    ).
+    IF SY-SUBRC = 0.
+      SET HANDLER me->handle_double_click FOR go_grid1.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD handle_double_click.	" Not Required for Screen2.
+    DATA: lwa_acc TYPE Z34_ACC.
+
+    IF e_column-fieldname = 'BELNR'.
+      READ TABLE git_acc INTO lwa_acc INDEX e_row-index.
+
+      CLEAR lv_belnr.
+      lv_belnr = LWA_ACC-BELNR.
+
+      CALL SCREEN 0200.
+    ELSE.
+      MESSAGE: 'Select Doc Number.' TYPE 'I'.
+    ENDIF.
+
+  ENDMETHOD.
+ENDCLASS.
