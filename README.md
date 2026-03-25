@@ -6,9 +6,9 @@
 
 > Date: January 30th, 2026.
 
-- [ ] Study for MCQ Assessment (30-01-2026).
-  - [ ] DDIC
-  - [ ] Classical Report
-  - [ ] Classical Interactive
+- [x] Study for MCQ Assessment (30-01-2026).
+  - [x] DDIC
+  - [x] Classical Report
+  - [x] Classical Interactive
 
-- [ ] Make a Back-Up of all the files and screenshots into a word file.
+- [x] Make a Back-Up of all the files and screenshots into a word file.
