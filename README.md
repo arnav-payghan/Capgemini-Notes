@@ -4,11 +4,22 @@
 
 ### Task List:
 
-> Date: January 30th, 2026.
+> Date: April 04th, 2026.
 
-- [x] Study for MCQ Assessment (30-01-2026).
-  - [x] DDIC
-  - [x] Classical Report
-  - [x] Classical Interactive
+- [ ] Sprint Implementation.
+  - [x] Tables
+  - [x] TMG-DATA
+  - [ ] OOALV (logo remaining)
+  - [ ] AdobeForm
+  - [x] BAPI
+  - [x] CDS Views
+  - [x] RAP Managed
+  - [ ] RAP Unmanaged (CRUD)
+  - [ ] RAP List View
+  - [ ] RAP Material Creation BAPI
+  - [x] RAP Sending Email
+  - [ ] RAP Singleton SM30
+  - [ ] Proxy
 
-- [x] Make a Back-Up of all the files and screenshots into a word file.
+
+- [ ] Make a Back-Up of all the files and screenshots into a word file.
