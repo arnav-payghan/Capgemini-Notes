@@ -16,7 +16,7 @@
   - [x] RAP Managed
   - [ ] RAP Unmanaged (CRUD)
   - [ ] RAP List View
-  - [ ] RAP Material Creation BAPI
+  - [x] RAP Material Creation BAPI
   - [x] RAP Sending Email
   - [ ] RAP Singleton SM30
   - [ ] Proxy
