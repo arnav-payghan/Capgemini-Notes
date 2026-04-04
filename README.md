@@ -14,7 +14,7 @@
   - [x] BAPI
   - [x] CDS Views
   - [x] RAP Managed
-  - [ ] RAP Unmanaged (CRUD)
+  - [x] RAP Unmanaged (CRUD)
   - [ ] RAP List View
   - [x] RAP Material Creation BAPI
   - [x] RAP Sending Email
